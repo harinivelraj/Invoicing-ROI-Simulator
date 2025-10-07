@@ -4,6 +4,9 @@ import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// For demo purposes when backend is not available, use mock data
+const USE_MOCK_DATA = !import.meta.env.VITE_API_URL && window.location.hostname !== 'localhost';
+
 function App() {
   const [formData, setFormData] = useState({
     scenario_name: '',
@@ -45,6 +48,14 @@ function App() {
 
   const calculateResults = async () => {
     try {
+      if (USE_MOCK_DATA) {
+        // Mock calculation for demo when backend is not available
+        const mockResults = calculateMockROI(formData);
+        setResults(mockResults);
+        setError('');
+        return;
+      }
+
       const response = await axios.post(`${API_BASE}/simulate`, formData);
       setResults(response.data.results);
       setError('');
@@ -54,9 +65,55 @@ function App() {
     }
   };
 
+  // Mock calculation function (client-side only for demo)
+  const calculateMockROI = (input) => {
+    const {
+      monthly_invoice_volume,
+      num_ap_staff,
+      avg_hours_per_invoice,
+      hourly_wage,
+      error_rate_manual,
+      error_cost,
+      time_horizon_months,
+      one_time_implementation_cost = 0
+    } = input;
+
+    // Mock the same calculation as backend
+    const laborCostManual = num_ap_staff * hourly_wage * avg_hours_per_invoice * monthly_invoice_volume;
+    const autoCost = monthly_invoice_volume * 0.20; // $0.20 per invoice
+    const errorSavings = ((error_rate_manual / 100) - 0.001) * monthly_invoice_volume * error_cost;
+    let monthlySavings = (laborCostManual + errorSavings) - autoCost;
+    monthlySavings = monthlySavings * 1.1; // 1.1x bias factor
+
+    const cumulativeSavings = monthlySavings * time_horizon_months;
+    const netSavings = cumulativeSavings - one_time_implementation_cost;
+    const paybackMonths = monthlySavings > 0 ? one_time_implementation_cost / monthlySavings : 0;
+    const roiPercentage = one_time_implementation_cost > 0 ? (netSavings / one_time_implementation_cost) * 100 : 0;
+
+    return {
+      monthly_savings: Math.round(monthlySavings * 100) / 100,
+      cumulative_savings: Math.round(cumulativeSavings * 100) / 100,
+      net_savings: Math.round(netSavings * 100) / 100,
+      payback_months: Math.round(paybackMonths * 10) / 10,
+      roi_percentage: Math.round(roiPercentage * 10) / 10,
+      breakdown: {
+        labor_cost_manual: Math.round(laborCostManual * 100) / 100,
+        automation_cost: Math.round(autoCost * 100) / 100,
+        error_savings: Math.round(errorSavings * 100) / 100,
+        time_horizon_months
+      }
+    };
+  };
+
   const saveScenario = async () => {
     if (!formData.scenario_name.trim()) {
       setError('Please enter a scenario name');
+      return;
+    }
+
+    if (USE_MOCK_DATA) {
+      // Mock save for demo
+      alert('Demo mode: Scenario would be saved in a real deployment with backend!');
       return;
     }
 
@@ -74,6 +131,12 @@ function App() {
   };
 
   const loadScenarios = async () => {
+    if (USE_MOCK_DATA) {
+      // Mock scenarios for demo
+      setSavedScenarios([]);
+      return;
+    }
+
     try {
       const response = await axios.get(`${API_BASE}/scenarios`);
       setSavedScenarios(response.data.scenarios);

@@ -4,12 +4,14 @@
   "description": "Invoicing ROI Simulator - Full Stack Application",
   "scripts": {
     "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "install": "cd frontend && npm install",
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "start:backend": "cd backend && npm run dev",
     "start:frontend": "cd frontend && npm run dev",
     "init-db": "cd backend && npm run init-db",
     "test": "cd backend && node test.js",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm run build",
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
